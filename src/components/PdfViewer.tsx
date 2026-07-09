@@ -27,17 +27,16 @@ export default function PdfViewer({
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
-  const renderedRef = useRef(false);
 
   useEffect(() => {
-    if (renderedRef.current) return;
-    renderedRef.current = true;
     let cancelled = false;
+    const tasks: { cancel: () => void }[] = [];
 
     (async () => {
       for (let p = 0; p < doc.numPages; p++) {
         if (cancelled) return;
         const page = await doc.getPage(p + 1);
+        if (cancelled) return;
         const viewport = page.getViewport({ scale });
         const canvas = canvasRefs.current[p];
         if (!canvas) continue;
@@ -47,12 +46,20 @@ export default function PdfViewer({
         canvas.height = viewport.height;
         canvas.style.width = `${viewport.width}px`;
         canvas.style.height = `${viewport.height}px`;
-        await page.render({ canvas, canvasContext: ctx, viewport }).promise;
+        const task = page.render({ canvas, canvasContext: ctx, viewport });
+        tasks.push(task);
+        try {
+          await task.promise;
+        } catch {
+          // レンダリングがキャンセルされた場合は無視
+        }
       }
     })();
 
+    // 開発モードの二重実行や再マウント時は、進行中の描画をキャンセルして再描画できるようにする
     return () => {
       cancelled = true;
+      for (const t of tasks) t.cancel();
     };
   }, [doc, scale]);
 
