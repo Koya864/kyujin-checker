@@ -30,6 +30,7 @@ export default function Home() {
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [spans, setSpans] = useState<HighlightSpan[]>([]);
   const [activeSpan, setActiveSpan] = useState<number | null>(null);
+  const [filter, setFilter] = useState<"all" | "good" | "concern">("all");
   const bufRef = useRef<ArrayBuffer | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -38,6 +39,7 @@ export default function Home() {
     setResult(null);
     setSpans([]);
     setActiveSpan(null);
+    setFilter("all");
     setFileName(file.name);
     setPhase("reading");
     try {
@@ -146,6 +148,7 @@ export default function Home() {
               pages={ext.pages}
               spans={spans}
               scrollToSpan={activeSpan}
+              verdictFilter={filter}
             />
           </div>
 
@@ -230,6 +233,13 @@ export default function Home() {
                   ...indexed.filter((x) => x.f.verdict === "warn"),
                   ...indexed.filter((x) => x.f.verdict === "caution"),
                 ];
+                const tabs: { key: typeof filter; label: string }[] = [
+                  { key: "all", label: `すべて（${indexed.length}）` },
+                  { key: "good", label: `好条件（${goods.length}）` },
+                  { key: "concern", label: `要注意・要確認（${concerns.length}）` },
+                ];
+                const showGood = filter === "all" || filter === "good";
+                const showConcern = filter === "all" || filter === "concern";
 
                 const card = (
                   { f, i }: { f: Finding; i: number },
@@ -274,8 +284,24 @@ export default function Home() {
                 };
 
                 return (
-                  <div className="space-y-5">
-                    {goods.length > 0 && (
+                  <div className="space-y-4">
+                    <div className="flex gap-1 rounded-lg bg-gray-100 p-1">
+                      {tabs.map((t) => (
+                        <button
+                          key={t.key}
+                          onClick={() => setFilter(t.key)}
+                          className={`flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition ${
+                            filter === t.key
+                              ? "bg-white text-gray-900 shadow-sm"
+                              : "text-gray-500 hover:text-gray-800"
+                          }`}
+                        >
+                          {t.label}
+                        </button>
+                      ))}
+                    </div>
+
+                    {showGood && goods.length > 0 && (
                       <div>
                         <p className="mb-2 flex items-center gap-2 text-sm font-medium text-lime-700">
                           <span className="inline-block h-2.5 w-2.5 rounded-full bg-lime-400" />
@@ -286,7 +312,7 @@ export default function Home() {
                         </ul>
                       </div>
                     )}
-                    {concerns.length > 0 && (
+                    {showConcern && concerns.length > 0 && (
                       <div>
                         <p className="mb-2 flex items-center gap-2 text-sm font-medium text-red-700">
                           <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-400" />

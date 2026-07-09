@@ -18,13 +18,18 @@ export default function PdfViewer({
   spans,
   scale = 1.4,
   scrollToSpan,
+  verdictFilter = "all",
 }: {
   doc: PDFDocumentProxy;
   pages: PageSize[];
   spans: HighlightSpan[];
   scale?: number;
   scrollToSpan?: number | null;
+  verdictFilter?: "all" | "good" | "concern";
 }) {
+  const spanVisible = (v: Verdict) =>
+    verdictFilter === "all" ||
+    (verdictFilter === "good" ? v === "good" : v !== "good");
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
 
@@ -90,7 +95,7 @@ export default function PdfViewer({
             }}
           />
           {spans.map((span, si) =>
-            span.boxes
+            (spanVisible(span.verdict) ? span.boxes : [])
               .filter((b) => b.page === p)
               .map((b, bi) => {
                 const left = b.x * scale;
