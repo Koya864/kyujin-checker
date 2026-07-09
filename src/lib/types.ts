@@ -21,5 +21,11 @@ export interface AnalysisResult {
   overall: string;
   company?: string;
   jobTitle?: string;
+  /** どんな仕事か（求職者向けの平易な説明） */
+  jobSummary?: string;
+  /** 具体的な仕事内容（箇条書き） */
+  jobDuties?: string[];
+  /** 勤務先（会社）についての要約 */
+  companyProfile?: string;
   findings: Finding[];
 }

@@ -41,6 +41,9 @@ ${traps}
   "overall": "総合所見（2〜3文）",
   "company": "採用企業名（分かれば）",
   "jobTitle": "求人名（分かれば）",
+  "jobSummary": "どんな仕事かを、専門用語を避けて2〜3文で平易に説明",
+  "jobDuties": ["具体的な仕事内容を短い箇条書きで3〜6個"],
+  "companyProfile": "勤務先（会社）がどんな会社か（業種・規模・設立・上場区分・企業フェーズ等、分かる範囲）を2〜3文で",
   "findings": [
     {
       "key": "annual_holidays 等のkey。該当なしはother",
@@ -97,6 +100,9 @@ function mockAnalyze(text: string): AnalysisResult {
     overall: "【モック判定】APIキー未設定のためサンプル判定を表示しています。本番ではClaudeが本文全体を精査します。",
     company: "(モック)",
     jobTitle: "(モック判定)",
+    jobSummary: "【モック】本番ではClaudeが仕事内容を平易に要約します。例：求職者に企業を紹介し、面談から入社までを支援する人材紹介の営業職です。",
+    jobDuties: ["【モック】求職者との面談・ヒアリング", "企業への人材紹介・提案", "選考〜入社までのフォロー"],
+    companyProfile: "【モック】本番では会社の業種・規模・設立・上場区分などを要約します。",
     findings,
   };
 }

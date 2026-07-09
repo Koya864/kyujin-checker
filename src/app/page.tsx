@@ -184,6 +184,45 @@ export default function Home() {
                 </button>
               </div>
 
+              {(result.jobSummary ||
+                (result.jobDuties?.length ?? 0) > 0 ||
+                result.companyProfile) && (
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  {result.jobSummary && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500">
+                        どんな仕事？
+                      </p>
+                      <p className="mt-1 text-sm text-gray-800">
+                        {result.jobSummary}
+                      </p>
+                    </div>
+                  )}
+                  {(result.jobDuties?.length ?? 0) > 0 && (
+                    <div className="mb-3">
+                      <p className="text-xs font-medium text-gray-500">
+                        具体的な仕事内容
+                      </p>
+                      <ul className="mt-1 list-disc pl-5 text-sm text-gray-800">
+                        {result.jobDuties!.map((d, i) => (
+                          <li key={i}>{d}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {result.companyProfile && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        勤務先について
+                      </p>
+                      <p className="mt-1 text-sm text-gray-800">
+                        {result.companyProfile}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               <ul className="space-y-2">
                 {result.findings.map((f, i) => {
                   const meta = VERDICT_META[f.verdict];
