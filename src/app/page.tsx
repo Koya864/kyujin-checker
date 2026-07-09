@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
-import type { AnalysisResult, Verdict } from "@/lib/types";
+import type { AnalysisResult, Verdict, Finding } from "@/lib/types";
 import type { ExtractedPdf } from "@/lib/pdf";
 import type { HighlightSpan } from "@/lib/annotate";
 import PdfViewer from "@/components/PdfViewer";
@@ -223,8 +223,18 @@ export default function Home() {
                 </div>
               )}
 
-              <ul className="space-y-2">
-                {result.findings.map((f, i) => {
+              {(() => {
+                const indexed = result.findings.map((f, i) => ({ f, i }));
+                const goods = indexed.filter((x) => x.f.verdict === "good");
+                const concerns = [
+                  ...indexed.filter((x) => x.f.verdict === "warn"),
+                  ...indexed.filter((x) => x.f.verdict === "caution"),
+                ];
+
+                const card = (
+                  { f, i }: { f: Finding; i: number },
+                  n: number
+                ) => {
                   const meta = VERDICT_META[f.verdict];
                   const active = activeSpan === i;
                   const hasBoxes = (spans[i]?.boxes.length ?? 0) > 0;
@@ -239,9 +249,9 @@ export default function Home() {
                         }`}
                       >
                         <div className="flex items-center gap-2">
-                          <span
-                            className={`inline-block h-2.5 w-2.5 rounded-full ${meta.dot}`}
-                          />
+                          <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gray-900 text-[11px] font-medium text-white">
+                            {n}
+                          </span>
                           <span className="text-sm font-medium">{f.label}</span>
                           <span
                             className={`ml-auto rounded px-2 py-0.5 text-[11px] ${meta.badge}`}
@@ -261,8 +271,35 @@ export default function Home() {
                       </button>
                     </li>
                   );
-                })}
-              </ul>
+                };
+
+                return (
+                  <div className="space-y-5">
+                    {goods.length > 0 && (
+                      <div>
+                        <p className="mb-2 flex items-center gap-2 text-sm font-medium text-lime-700">
+                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-lime-400" />
+                          好条件（{goods.length}件）
+                        </p>
+                        <ul className="space-y-2">
+                          {goods.map((x, idx) => card(x, idx + 1))}
+                        </ul>
+                      </div>
+                    )}
+                    {concerns.length > 0 && (
+                      <div>
+                        <p className="mb-2 flex items-center gap-2 text-sm font-medium text-red-700">
+                          <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-400" />
+                          要注意・要確認（{concerns.length}件）
+                        </p>
+                        <ul className="space-y-2">
+                          {concerns.map((x, idx) => card(x, idx + 1))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </aside>
         </div>
