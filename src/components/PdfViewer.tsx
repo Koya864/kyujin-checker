@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { PageSize } from "@/lib/pdf";
 import type { HighlightSpan } from "@/lib/annotate";
@@ -16,14 +16,14 @@ export default function PdfViewer({
   doc,
   pages,
   spans,
-  scale = 1.4,
+  maxScale = 1.5,
   scrollToSpan,
   verdictFilter = "all",
 }: {
   doc: PDFDocumentProxy;
   pages: PageSize[];
   spans: HighlightSpan[];
-  scale?: number;
+  maxScale?: number;
   scrollToSpan?: number | null;
   verdictFilter?: "all" | "good" | "concern";
 }) {
@@ -32,6 +32,24 @@ export default function PdfViewer({
     (verdictFilter === "good" ? v === "good" : v !== "good");
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRefs = useRef<(HTMLCanvasElement | null)[]>([]);
+  const [scale, setScale] = useState(1);
+
+  // コンテナ幅に合わせてスケールを自動調整（横見切れ防止・スマホ対応）
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const maxPageW = Math.max(...pages.map((p) => p.width), 1);
+    const compute = () => {
+      const w = el.clientWidth;
+      if (w > 0) {
+        setScale(Math.min(maxScale, Math.max(0.2, w / maxPageW)));
+      }
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [pages, maxScale]);
 
   useEffect(() => {
     let cancelled = false;
@@ -81,7 +99,7 @@ export default function PdfViewer({
   }, [scrollToSpan, spans]);
 
   return (
-    <div ref={containerRef} className="flex flex-col items-center gap-4">
+    <div ref={containerRef} className="flex w-full flex-col items-center gap-4">
       {pages.map((pg, p) => (
         <div
           key={p}
