@@ -4,9 +4,50 @@ import standards from "@/lib/standards";
 import type { AnalysisResult, Verdict } from "@/lib/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+
+// 構造化出力用スキーマ（壊れたJSONが返るのを防ぐ）
+const RESULT_SCHEMA = {
+  type: "object",
+  properties: {
+    grade: { type: "string", enum: ["A", "B", "C"] },
+    overall: { type: "string" },
+    company: { type: "string" },
+    jobTitle: { type: "string" },
+    jobSummary: { type: "string" },
+    jobDuties: { type: "array", items: { type: "string" } },
+    companyProfile: { type: "string" },
+    findings: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          key: { type: "string" },
+          label: { type: "string" },
+          verdict: { type: "string", enum: ["good", "caution", "warn"] },
+          summary: { type: "string" },
+          comment: { type: "string" },
+          evidence: { type: "array", items: { type: "string" } },
+        },
+        required: ["key", "label", "verdict", "summary", "comment", "evidence"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: [
+    "grade",
+    "overall",
+    "company",
+    "jobTitle",
+    "jobSummary",
+    "jobDuties",
+    "companyProfile",
+    "findings",
+  ],
+  additionalProperties: false,
+} as const;
 
 function buildSystemPrompt(): string {
   const criteria = standards.criteria
@@ -138,15 +179,19 @@ export async function POST(req: NextRequest) {
   try {
     const msg = await client.messages.create({
       model: MODEL,
-      max_tokens: 4000,
+      max_tokens: 12000,
       system: buildSystemPrompt(),
+      output_config: {
+        effort: "medium",
+        format: { type: "json_schema", schema: RESULT_SCHEMA },
+      },
       messages: [
         {
           role: "user",
           content: `以下が求人票の本文です。JSONで判定を返してください。\n\n----- 求人票本文ここから -----\n${clipped}\n----- 求人票本文ここまで -----`,
         },
       ],
-    });
+    } as Anthropic.MessageCreateParamsNonStreaming);
     const textPart = msg.content.find((c) => c.type === "text");
     const raw = textPart && textPart.type === "text" ? textPart.text : "";
     const result = extractJson(raw);
